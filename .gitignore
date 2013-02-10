@@ -11,3 +11,8 @@
 *.lai
 *.la
 *.a
+
+# dev and temp files
+*~
+*kdev*
+src/test
