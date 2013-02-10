@@ -16,10 +16,14 @@ As a side effect, this will only works on x86_64 linux. (32bit virtual memory sp
 
 
 
-#### Why not use the well established and stable NetCDF library from UCAR/UNIDATA ?
+### Why not use the well established and stable NetCDF library from UCAR/UNIDATA ?
 
 The NetCDF library is very good for it's job. But there's a lot of overhead when it comes to serving a lot of small random data from very huge datasets.
 
 Using mmap, we can avoid most of the file access and memory allocation operations. So every megabytes of the computer RAM can be used for caching the data.
 
 The newest NetCDF library supports mmap, but it's implemented to fit the previous file-based mecanism. It's not designed for mmap.
+
+
+### NetCDF3 Classic and 64bit offset format specification :
+http://www.unidata.ucar.edu/software/netcdf/docs/netcdf/File-Format.html#File-Format
