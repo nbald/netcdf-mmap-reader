@@ -1,4 +1,4 @@
-mmap-netcdf-reader
+netcdf-mmap-reader
 ==================
 
 **** Work in progress ****
