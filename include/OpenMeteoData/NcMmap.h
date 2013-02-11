@@ -11,7 +11,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MeteoDataServer is distributed in the hope that it will be useful,
+ * netcdf-mmap-reader is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -30,7 +30,7 @@
 #include <stdint.h> // for integers types
 #include <cstring> 
 #include <string>
-
+#include <endian.h>
 
 #ifdef DEBUG
 #include <iostream>
@@ -43,6 +43,7 @@ namespace OpenMeteoData {
   class NcMmap {
     
   public:
+    
     typedef uint8_t Byte;
     typedef uint8_t Char;
     typedef int16_t Short;
@@ -50,15 +51,23 @@ namespace OpenMeteoData {
     typedef int64_t Int64;
     typedef float Float;
     typedef double Double;
-
+    
     typedef std::string FileName;
     typedef uint64_t Offset;
+    
+    typedef std::string FileException;
+    typedef std::string MmapException;
+    typedef std::string NetCdfException;
     
     struct File {
       FileName name;
       int handle;
       size_t size;
       bool is64bit;
+    };
+    
+    struct Infos {
+      int nRecords;
     };
     
     
@@ -70,10 +79,13 @@ namespace OpenMeteoData {
     
     File file_;
     void *data_;
-    
-    void parseRecordsCount_();
+    Infos infos_;
+        
     void parseFormat_();
-    Byte *getByte(Offset);
+    void parseRecordsCount_();
+    void parseDimensions_(Offset &);
+    Byte *getByteP_(Offset const &);
+    Int getInt_(Offset const &);
   }; /* End of class NcMmap. */
 
 } /* End of namespace OpenMeteoData. */

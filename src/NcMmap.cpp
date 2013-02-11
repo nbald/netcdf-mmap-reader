@@ -11,7 +11,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MeteoDataServer is distributed in the hope that it will be useful,
+ * netcdf-mmap-reader is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -34,7 +34,7 @@ namespace OpenMeteoData {
     file_.handle = open(file_.name.c_str(), O_RDONLY);
     if (file_.handle == -1)
     {
-        throw std::string("ERROR : can't open " + file_.name);
+        throw FileException("ERROR : can't open " + file_.name);
     }
     
     #ifdef DEBUG
@@ -43,7 +43,7 @@ namespace OpenMeteoData {
     
     struct stat statInfos;
     if (stat(file_.name.c_str(), &statInfos) == -1) {
-        throw std::string("stat error");
+        throw FileException("stat error");
     }
     
     file_.size = statInfos.st_size;
@@ -55,42 +55,32 @@ namespace OpenMeteoData {
       
     data_ = mmap(NULL, file_.size, PROT_READ, MAP_SHARED, file_.handle, 0);
     if (data_ == MAP_FAILED) {
-        throw std::string("mmap error");
+        throw MmapException("mmap error");
     }
 
     parseFormat_();
     parseRecordsCount_();
-   
+    Offset offset = 8;
+    parseDimensions_(offset);
+    
+    
     int status = madvise(data_, file_.size, MADV_RANDOM|MADV_WILLNEED);
     if (status < 0) {
-        throw std::string("mmap advise error");
+        throw MmapException("mmap advise error");
     }
   }
-  
-  void NcMmap::parseRecordsCount_()
-  {
-    
-    
-    
-    
-    
-    #ifdef DEBUG
-      std::cout << "read " << *((char*)data_+1) << std::endl;
-    #endif
-    
-  }
-  
+
   
   void NcMmap::parseFormat_()
   {
     // check we have a NetCDF File
-    if (memcmp("CDF", (char*)data_, 3) != 0)
+    if (memcmp("CDF", (Byte*)data_, 3) != 0)
     {
-      throw std::string("not a netcdf file");
+      throw NetCdfException("not a netcdf file");
     }
     
     // check if classic or 64bit format
-    switch (*getByte(3))
+    switch (*getByteP_(3))
     {
       case 1:
 	file_.is64bit = false;
@@ -108,15 +98,71 @@ namespace OpenMeteoData {
 	
       default:
 	#ifdef DEBUG
-	  std::cout << "format: " << (int)*getByte(3) << std::endl;
+	  std::cout << "format: " << (int)*getByteP_(3) << std::endl;
 	#endif
-	throw std::string("unknow netcdf format");
+	throw NetCdfException("unknown netcdf format");
     }
   }
   
+  void NcMmap::parseRecordsCount_()
+  {
+    infos_.nRecords = be32toh(*((Int*)data_+1));  
+    
+    #ifdef DEBUG
+      std::cout << "records : " << infos_.nRecords << std::endl;
+    #endif
+  }
   
-  NcMmap::Byte* NcMmap::getByte(Offset offset) {return (uint8_t *)data_+offset;}
+  void NcMmap::parseDimensions_(Offset &offset)
+  {
+    
+    offset += 3;
+ 
+    switch (*getByteP_(offset))
+    {
+      case 10: // dimensions marker
+	break;
+      case 0:
+	throw NetCdfException("this file has 0 dimensions");
+	break;
+      default:
+	throw NetCdfException("unexpected dimensions marker");
+    }
+    
+    ++offset;
+    
+    int nDims = be32toh(*(int*)getByteP_(offset));
+    #ifdef DEBUG
+      std::cout << "dimensions : " << nDims << std::endl;
+    #endif
+      
+    offset += 4;
+    
+    for (int i=0; i<nDims; i++)
+    {
+      size_t length = getInt_(offset);
+      offset += 4;
+      std::string dimName ((char*)((char*)data_+offset), length);
+      offset += length;
+      int mod = length%4;
+      if (mod != 0) offset += 4-mod;
+      
+      int nVals = getInt_(offset);
+      #ifdef DEBUG
+	std::cout << "len : " << length << std::endl;
+	std::cout << "test : " << dimName << std::endl;
+	std::cout << "nvals : " << nVals << std::endl;
+      #endif
+      offset += 4;
+    }
+    std::string test ();
+    
+    
+  }
   
+  
+  NcMmap::Byte* NcMmap::getByteP_(Offset const &offset) {return (Byte *)data_+offset;}
+  NcMmap::Int NcMmap::getInt_(Offset const &offset) {return be32toh(*(int*)getByteP_(offset));};
   
   NcMmap::~NcMmap()
   {
