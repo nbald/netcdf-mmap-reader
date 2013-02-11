@@ -59,8 +59,7 @@ namespace OpenMeteoData {
     }
 
     parseFormat_();
-    parseRecordsCount_();
-    Offset offset = 8;
+    Offset offset;
     parseDimensions_(offset);
     
     
@@ -104,19 +103,15 @@ namespace OpenMeteoData {
     }
   }
   
-  void NcMmap::parseRecordsCount_()
-  {
-    infos_.nRecords = be32toh(*((Int*)data_+1));  
-    
-    #ifdef DEBUG
-      std::cout << "records : " << infos_.nRecords << std::endl;
-    #endif
-  }
-  
   void NcMmap::parseDimensions_(Offset &offset)
   {
     
-    offset += 3;
+    dimensions_.nRecords = be32toh(*((Int*)data_+1));
+    #ifdef DEBUG
+      std::cout << "records : " << dimensions_.nRecords << std::endl;
+    #endif
+      
+    offset = 11;
  
     switch (*getByteP_(offset))
     {
@@ -140,23 +135,22 @@ namespace OpenMeteoData {
     
     for (int i=0; i<nDims; i++)
     {
-      size_t length = getInt_(offset);
+      size_t nameLength = getInt_(offset);
       offset += 4;
-      std::string dimName ((char*)((char*)data_+offset), length);
-      offset += length;
-      int mod = length%4;
+      std::string name ((char*)((char*)data_+offset), nameLength);
+      offset += nameLength;
+      int mod = nameLength%4;
       if (mod != 0) offset += 4-mod;
       
       int nVals = getInt_(offset);
       #ifdef DEBUG
-	std::cout << "len : " << length << std::endl;
-	std::cout << "test : " << dimName << std::endl;
-	std::cout << "nvals : " << nVals << std::endl;
+	std::cout << i << ": " << name << " (" << nVals << ")" << std::endl;
       #endif
       offset += 4;
-    }
-    std::string test ();
-    
+      
+      dimensions_.name.push_back(name);
+      dimensions_.size.push_back(nVals);
+    }    
     
   }
   

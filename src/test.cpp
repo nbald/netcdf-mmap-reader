@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
   {
     OpenMeteoData::NcMmap ncMmap ("../sampledata/netcdf64.nc");
   } 
-  catch (std::string &error)
+  catch (std::string const &error)
   {
     std::cerr << error << std::endl;
   }

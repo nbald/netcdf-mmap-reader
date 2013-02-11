@@ -30,6 +30,7 @@
 #include <stdint.h> // for integers types
 #include <cstring> 
 #include <string>
+#include <vector>
 #include <endian.h>
 
 #ifdef DEBUG
@@ -52,8 +53,12 @@ namespace OpenMeteoData {
     typedef float Float;
     typedef double Double;
     
+    
     typedef std::string FileName;
+    typedef std::string Name;
     typedef uint64_t Offset;
+    typedef int Id;
+    typedef int Count;
     
     typedef std::string FileException;
     typedef std::string MmapException;
@@ -66,10 +71,11 @@ namespace OpenMeteoData {
       bool is64bit;
     };
     
-    struct Infos {
-      int nRecords;
+    struct Dimensions {
+      Count nRecords;
+      std::vector<Name> name;
+      std::vector<Count> size;
     };
-    
     
     NcMmap(FileName const &);
     ~NcMmap();
@@ -79,10 +85,9 @@ namespace OpenMeteoData {
     
     File file_;
     void *data_;
-    Infos infos_;
+    Dimensions dimensions_;
         
     void parseFormat_();
-    void parseRecordsCount_();
     void parseDimensions_(Offset &);
     Byte *getByteP_(Offset const &);
     Int getInt_(Offset const &);
