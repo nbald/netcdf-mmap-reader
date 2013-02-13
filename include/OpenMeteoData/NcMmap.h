@@ -102,13 +102,15 @@ namespace OpenMeteoData {
     NcMmap(FileName const &);
     ~NcMmap();
     
+    Attribute getGlobalAttribute(Name const &);
+    
   protected:
   private:
     
     File file_;
     void *data_;
     Dimensions dimensions_;
-    AttributesList attributes_;
+    AttributesList globalAttributes_;
     
     void parseFormat_();
     void parseDimensions_(Offset &);
@@ -117,7 +119,9 @@ namespace OpenMeteoData {
     
     Byte *getByteP_(Offset const &);
     Int getInt_(Offset const &);
-    Int getShort_(Offset const &);
+    Short getShort_(Offset const &);
+    Float getFloat_(Offset const &);
+    Double getDouble_(Offset const &);
     std::string getString_(Offset &);
   }; /* End of class NcMmap. */
 

@@ -61,7 +61,7 @@ namespace OpenMeteoData {
     parseFormat_();
     Offset offset;
     parseDimensions_(offset);
-    attributes_ = parseAttributes_(offset);
+    globalAttributes_ = parseAttributes_(offset);
     
     int status = madvise(data_, file_.size, MADV_RANDOM|MADV_WILLNEED);
     if (status < 0) {
@@ -232,7 +232,7 @@ namespace OpenMeteoData {
 	  offset +=4;
 	  for (int i=0; i<n; i++)
 	  {
-	    attribute.integerValue.push_back(getInt_(offset));
+	    attribute.floatValue.push_back(getFloat_(offset));
 	    offset += 4;
 	  }
 	  break;
@@ -241,7 +241,7 @@ namespace OpenMeteoData {
 	  offset +=4;
 	  for (int i=0; i<n; i++)
 	  {
-	    attribute.integerValue.push_back(getInt_(offset));
+	    attribute.floatValue.push_back(getDouble_(offset));
 	    offset += 8;
 	  }
 	  break;
@@ -255,10 +255,22 @@ namespace OpenMeteoData {
   }
   
   
+
   
   NcMmap::Byte* NcMmap::getByteP_(Offset const &offset) {return (Byte *)data_+offset;}
   NcMmap::Int NcMmap::getInt_(Offset const &offset) {return be32toh(*(Int*)getByteP_(offset));}
-  NcMmap::Int NcMmap::getShort_(Offset const &offset) {return be32toh(*(Short*)getByteP_(offset));}
+  NcMmap::Short NcMmap::getShort_(Offset const &offset) {return be16toh(*(Short*)getByteP_(offset));}
+  
+  NcMmap::Float NcMmap::getFloat_(Offset const &offset)
+  {
+    uint32_t littleEndian = be32toh(*(uint32_t*)getByteP_(offset));
+    return *(float*)&littleEndian;
+  }
+  
+  NcMmap::Double NcMmap::getDouble_(Offset const &offset) {
+    uint64_t littleEndian = be64toh(*(uint64_t*)getByteP_(offset));
+    return *(double*)&littleEndian;
+  }
   
   std::string NcMmap::getString_(Offset &offset) {
       // get the name
@@ -270,6 +282,13 @@ namespace OpenMeteoData {
       if (mod != 0) offset += 4-mod;
       return string;
   }
+  
+  
+  
+  NcMmap::Attribute NcMmap::getGlobalAttribute(Name const &name) {
+    return globalAttributes_[name];
+  }
+  
   
   NcMmap::~NcMmap()
   {
