@@ -38,9 +38,6 @@
 #include <iostream>
 #endif
 
-
-namespace OpenMeteoData {
-
   
   class NcMmap {
     
@@ -104,15 +101,19 @@ namespace OpenMeteoData {
       Type type;
       UInt bytes;
       UInt64 offset;
+      UInt order;
     };
     
     typedef std::map<Name, Variable> VariablesList;
     
     NcMmap(FileName const &);
+    NcMmap();
     ~NcMmap();
     
-    Attribute getGlobalAttribute(Name const &);
-    
+    Attribute* getGlobalAttribute(Name const &);
+    VariablesList* getVariablesList();
+    void openFile(FileName const &);
+
   protected:
   private:
     
@@ -129,7 +130,7 @@ namespace OpenMeteoData {
     
     
     Byte *getByteP_(Offset const &);
-    Int getInt_(Offset const &);
+    Int getInt_(Offset &);
     UInt getUInt_(Offset const &);
     UInt getUInt64_(Offset const &);
     Short getShort_(Offset const &);
@@ -138,6 +139,5 @@ namespace OpenMeteoData {
     std::string getString_(Offset &);
   }; /* End of class NcMmap. */
 
-} /* End of namespace OpenMeteoData. */
 
 #endif  /* Undefined OMD_NCMMAP__NCMMAP__H. */
