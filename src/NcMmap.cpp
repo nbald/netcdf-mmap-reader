@@ -61,7 +61,7 @@ namespace OpenMeteoData {
     parseFormat_();
     Offset offset;
     parseDimensions_(offset);
-    
+    attributes_ = parseAttributes_(offset);
     
     int status = madvise(data_, file_.size, MADV_RANDOM|MADV_WILLNEED);
     if (status < 0) {
@@ -115,7 +115,7 @@ namespace OpenMeteoData {
  
     switch (*getByteP_(offset))
     {
-      case 10: // dimensions marker
+      case 0x0A: // dimensions marker
 	break;
       case 0:
 	throw NetCdfException("this file has 0 dimensions");
@@ -135,12 +135,7 @@ namespace OpenMeteoData {
     
     for (int i=0; i<nDims; i++)
     {
-      size_t nameLength = getInt_(offset);
-      offset += 4;
-      std::string name ((char*)((char*)data_+offset), nameLength);
-      offset += nameLength;
-      int mod = nameLength%4;
-      if (mod != 0) offset += 4-mod;
+      std::string name = getString_(offset);
       
       int nVals = getInt_(offset);
       #ifdef DEBUG
@@ -155,8 +150,126 @@ namespace OpenMeteoData {
   }
   
   
+  NcMmap::AttributesList NcMmap::parseAttributes_(Offset &offset)
+  {
+    
+    AttributesList attributesMap;
+    
+    int nAttributes =-1;
+    offset += 3;
+    switch (*getByteP_(offset))
+    {
+      case 0x0C: // attributes marker
+	break;
+      case 0:
+	nAttributes=0;
+	break;
+      default:
+	throw NetCdfException("unexpected attributes marker");
+    }
+    ++offset;
+    
+    if (nAttributes != 0) {
+      nAttributes = getInt_(offset);
+    }
+    offset += 4;
+    
+    #ifdef DEBUG
+	std::cout << "attributes : " << nAttributes << std::endl;
+    #endif
+    
+    for (int i=0; i<nAttributes; i++)
+    {
+      Attribute attribute;
+      Name name = getString_(offset);
+      
+      #ifdef DEBUG
+	std::cout << "name " << name << std::endl;
+      #endif
+      
+      // get the type
+      offset +=3;
+      attribute.type = static_cast<Type>(*getByteP_(offset));
+      ++offset;
+      #ifdef DEBUG
+	std::cout << "type " << attribute.type << std::endl;
+      #endif
+
+      int n;
+      switch (attribute.type) {
+	case NC_BYTE: // 1
+	  n = getInt_(offset);
+	  offset +=4;
+	  for (int i=0; i<n; i++)
+	  {
+	    attribute.integerValue.push_back(*getByteP_(offset));
+	    ++offset;
+	  }
+	  break;
+	case NC_CHAR: // 2
+	  attribute.stringValue = getString_(offset);
+	  break;
+	case NC_SHORT: // 3
+	  n = getInt_(offset);
+	  offset +=4;
+	  for (int i=0; i<n; i++)
+	  {
+	    attribute.integerValue.push_back(getShort_(offset));
+	    offset += 2;
+	  }
+	  break;
+	case NC_INT: // 4
+	  n = getInt_(offset);
+	  offset +=4;
+	  for (int i=0; i<n; i++)
+	  {
+	    attribute.integerValue.push_back(getInt_(offset));
+	    offset += 4;
+	  }
+	  break;
+	case NC_FLOAT: // 5
+	  n = getInt_(offset);
+	  offset +=4;
+	  for (int i=0; i<n; i++)
+	  {
+	    attribute.integerValue.push_back(getInt_(offset));
+	    offset += 4;
+	  }
+	  break;
+	case NC_DOUBLE: // 6
+	  n = getInt_(offset);
+	  offset +=4;
+	  for (int i=0; i<n; i++)
+	  {
+	    attribute.integerValue.push_back(getInt_(offset));
+	    offset += 8;
+	  }
+	  break;
+      }
+      
+      attributesMap[name] = attribute;
+      
+    }
+    
+    return attributesMap;
+  }
+  
+  
+  
   NcMmap::Byte* NcMmap::getByteP_(Offset const &offset) {return (Byte *)data_+offset;}
-  NcMmap::Int NcMmap::getInt_(Offset const &offset) {return be32toh(*(int*)getByteP_(offset));};
+  NcMmap::Int NcMmap::getInt_(Offset const &offset) {return be32toh(*(Int*)getByteP_(offset));}
+  NcMmap::Int NcMmap::getShort_(Offset const &offset) {return be32toh(*(Short*)getByteP_(offset));}
+  
+  std::string NcMmap::getString_(Offset &offset) {
+      // get the name
+      size_t nameLength = getInt_(offset);
+      offset += 4;
+      std::string string ((char*)((char*)data_+offset), nameLength);
+      offset += nameLength;
+      int mod = nameLength%4;
+      if (mod != 0) offset += 4-mod;
+      return string;
+  }
   
   NcMmap::~NcMmap()
   {
