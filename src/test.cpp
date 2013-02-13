@@ -20,19 +20,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <OpenMeteoData/NcMmap.h>
+#include <NcMmap.h>
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
   
   try
   {
-    OpenMeteoData::NcMmap ncMmap ("../sampledata/netcdf64.nc");
-    /*OpenMeteoData::NcMmap::Attribute title = ncMmap.getGlobalAttribute("corner_lons");
-    for (size_t i=0; i<title.floatValue.size(); i++)
+    NcMmap ncMmap ("../sampledata/netcdf64.nc");
+    /*NcMmap::Attribute* title = ncMmap.getGlobalAttribute("corner_lons");
+    for (size_t i=0; i<title->floatValue.size(); i++)
     {
-      std::cout << " f: " << title.floatValue[i] << std::endl;
+      std::cout << " f: " << title->floatValue[i] << std::endl;
     }*/
+    
+    NcMmap::VariablesList* vars = ncMmap.getVariablesList();
+    
+    NcMmap::VariablesList::const_iterator itr;
+    for(itr = vars->begin(); itr != vars->end(); ++itr){
+      std::cout << (*itr).first << " : "
+      << (*itr).second.offset << " " 
+      << (*itr).second.order << " " 
+      << std::endl;
+    }
+    
     
   } 
   catch (std::string const &error)

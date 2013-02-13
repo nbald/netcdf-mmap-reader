@@ -19,15 +19,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <OpenMeteoData/NcMmap.h>
+#include <NcMmap.h>
 
-namespace OpenMeteoData {
 
   NcMmap::NcMmap(FileName const &fileName)
   {
-    
-    
-    
+    openFile(fileName);
+  }
+  
+  NcMmap::NcMmap()
+  {
+  }
+  
+  void NcMmap::openFile(FileName const &fileName)
+  {
     file_.name = fileName;
     
     
@@ -128,12 +133,11 @@ namespace OpenMeteoData {
     
     ++offset;
     
-    int nDims = be32toh(*(int*)getByteP_(offset));
+    int nDims = getInt_(offset);
     #ifdef DEBUG
       std::cout << "dimensions : " << nDims << std::endl;
     #endif
       
-    offset += 4;
     
     for (int i=0; i<nDims; i++)
     {
@@ -143,7 +147,6 @@ namespace OpenMeteoData {
       #ifdef DEBUG
 	std::cout << i << ": " << name << " (" << nVals << ")" << std::endl;
       #endif
-      offset += 4;
       
       dimensions_.name.push_back(name);
       dimensions_.size.push_back(nVals);
@@ -171,10 +174,14 @@ namespace OpenMeteoData {
     }
     ++offset;
     
-    if (nAttributes != 0) {
+    if (nAttributes != 0)
+    {
       nAttributes = getInt_(offset);
     }
-    offset += 4;
+    else
+    {
+      offset += 4;
+    }
     
     #ifdef DEBUG
 	std::cout << "attributes : " << nAttributes << std::endl;
@@ -201,7 +208,6 @@ namespace OpenMeteoData {
       switch (attribute.type) {
 	case NC_BYTE: // 1
 	  n = getInt_(offset);
-	  offset +=4;
 	  for (int i=0; i<n; i++)
 	  {
 	    attribute.integerValue.push_back(*getByteP_(offset));
@@ -213,7 +219,6 @@ namespace OpenMeteoData {
 	  break;
 	case NC_SHORT: // 3
 	  n = getInt_(offset);
-	  offset +=4;
 	  for (int i=0; i<n; i++)
 	  {
 	    attribute.integerValue.push_back(getShort_(offset));
@@ -222,16 +227,13 @@ namespace OpenMeteoData {
 	  break;
 	case NC_INT: // 4
 	  n = getInt_(offset);
-	  offset +=4;
 	  for (int i=0; i<n; i++)
 	  {
 	    attribute.integerValue.push_back(getInt_(offset));
-	    offset += 4;
 	  }
 	  break;
 	case NC_FLOAT: // 5
 	  n = getInt_(offset);
-	  offset +=4;
 	  for (int i=0; i<n; i++)
 	  {
 	    attribute.floatValue.push_back(getFloat_(offset));
@@ -240,7 +242,6 @@ namespace OpenMeteoData {
 	  break;
 	case NC_DOUBLE: // 6
 	  n = getInt_(offset);
-	  offset +=4;
 	  for (int i=0; i<n; i++)
 	  {
 	    attribute.floatValue.push_back(getDouble_(offset));
@@ -275,7 +276,10 @@ namespace OpenMeteoData {
     if (nVariables != 0) {
       nVariables = getInt_(offset);
     }
-    offset += 4;
+    else
+    {
+      offset += 4;
+    }
     
     #ifdef DEBUG
 	std::cout << "variables : " << nVariables << std::endl;
@@ -293,12 +297,10 @@ namespace OpenMeteoData {
       #endif
 
       int nDims = getInt_(offset);
-      offset += 4;
       
-      for (int i=0; i<nDims; ++i)
+      for (int j=0; j<nDims; ++j)
       {
 	variable.dimensionsList.push_back(getInt_(offset));
-	offset += 4;
       }
       
       variable.attributesList = parseAttributes_(offset);
@@ -328,14 +330,16 @@ namespace OpenMeteoData {
 	offset += 4;
       }
 
+      variable.order = i;
       variablesList_[name] = variable;
     }
   }
 
   
   NcMmap::Byte* NcMmap::getByteP_(Offset const &offset) {return (Byte *)data_+offset;}
-  NcMmap::Int NcMmap::getInt_(Offset const &offset) {
+  NcMmap::Int NcMmap::getInt_(Offset &offset) {
     uint32_t littleEndian = be32toh(*(uint32_t*)getByteP_(offset));
+    offset +=4;
     return *(Int*)&littleEndian;
   }
   NcMmap::Short NcMmap::getShort_(Offset const &offset) {
@@ -359,7 +363,6 @@ namespace OpenMeteoData {
   std::string NcMmap::getString_(Offset &offset) {
       // get the name
       size_t nameLength = getInt_(offset);
-      offset += 4;
       std::string string ((char*)((char*)data_+offset), nameLength);
       offset += nameLength;
       int mod = nameLength%4;
@@ -369,10 +372,14 @@ namespace OpenMeteoData {
   
   
   
-  NcMmap::Attribute NcMmap::getGlobalAttribute(Name const &name) {
-    return globalAttributesList_[name];
+  NcMmap::Attribute* NcMmap::getGlobalAttribute(Name const &name) {
+    return &globalAttributesList_[name];
   }
   
+  NcMmap::VariablesList* NcMmap::getVariablesList()
+  {
+    return &variablesList_;
+  }
   
   NcMmap::~NcMmap()
   {
@@ -385,5 +392,6 @@ namespace OpenMeteoData {
     #endif
       
   }
+  
 
-}
+
