@@ -96,8 +96,17 @@ namespace OpenMeteoData {
       std::vector<double> floatValue;
     };
     
-    
     typedef std::map<Name, Attribute> AttributesList;
+    
+    struct Variable {
+      std::vector<int> dimensionsList;
+      AttributesList attributesList;
+      Type type;
+      UInt bytes;
+      UInt64 offset;
+    };
+    
+    typedef std::map<Name, Variable> VariablesList;
     
     NcMmap(FileName const &);
     ~NcMmap();
@@ -110,15 +119,19 @@ namespace OpenMeteoData {
     File file_;
     void *data_;
     Dimensions dimensions_;
-    AttributesList globalAttributes_;
+    AttributesList globalAttributesList_;
+    VariablesList variablesList_;
     
     void parseFormat_();
     void parseDimensions_(Offset &);
     AttributesList parseAttributes_(Offset &);
+    void parseVariables_(Offset &);
     
     
     Byte *getByteP_(Offset const &);
     Int getInt_(Offset const &);
+    UInt getUInt_(Offset const &);
+    UInt getUInt64_(Offset const &);
     Short getShort_(Offset const &);
     Float getFloat_(Offset const &);
     Double getDouble_(Offset const &);

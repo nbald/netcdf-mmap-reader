@@ -28,11 +28,11 @@ int main(int argc, char *argv[])
   try
   {
     OpenMeteoData::NcMmap ncMmap ("../sampledata/netcdf64.nc");
-    OpenMeteoData::NcMmap::Attribute title = ncMmap.getGlobalAttribute("corner_lats");
+    /*OpenMeteoData::NcMmap::Attribute title = ncMmap.getGlobalAttribute("corner_lons");
     for (size_t i=0; i<title.floatValue.size(); i++)
     {
       std::cout << " f: " << title.floatValue[i] << std::endl;
-    }
+    }*/
     
   } 
   catch (std::string const &error)
